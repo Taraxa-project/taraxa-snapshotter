@@ -1,0 +1,51 @@
+version: '3'
+
+services:
+  ipfs:
+    image: ipfs/kubo:v0.22.0
+    volumes:
+      - ipfs_dir:/data/ipfs
+    ports:
+      - "5001:5001"
+  taraxa-node:
+    image: taraxa/taraxa-node:v1.4.2
+    restart: always
+    ports:
+      - "10002:10002"
+      - "10002:10002/udp"
+      - "7777:7777"
+      - "8777:8777"
+    entrypoint: /usr/bin/sh
+    command: >
+      -c "mkdir -p /srv/taraxa/data && mkdir -p /srv/taraxa/conf &&
+          taraxad --chain-id 200 --wallet /srv/taraxa/conf/wallet.json --genesis /srv/taraxa/conf/genesis.json --config /srv/taraxa/conf/config.json --data-dir /srv/taraxa/data --overwrite-config --enable-test-rpc --debug"
+    volumes:
+      - ./config/taraxa_node:/srv/taraxa/conf
+      - taraxa_dir:/srv/taraxa/data
+  status-app:
+    image: taraxa/taraxa-node-status:latest
+    environment:
+      - NEXT_PUBLIC_RPC=http://taraxa-node:7777
+    restart: always
+    depends_on:
+      - taraxa-node
+    ports:
+      - "3000:3000"
+  taraxa-snapshots:
+    build:
+      context: .
+      target: gobuilder
+    command: tail -f /dev/null
+    environment:
+      BASE_DIR: /srv/taraxa/data/db
+      IPFS_GATEWAY: http://ipfs:5001
+      IPFS_URL: http://ipfs:5001
+    volumes:
+      - taraxa_dir:/srv/taraxa/data
+      - ./:/taraxa-snapshotter
+    depends_on:
+      - ipfs
+      - taraxa-node
+volumes:
+  taraxa_dir:
+  ipfs_dir:

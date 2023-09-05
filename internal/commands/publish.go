@@ -10,6 +10,7 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
+// Publish publishes a local snapshot to IPFS
 func Publish(ctx *cli.Context) error {
 	fmt.Println("Publish")
 
