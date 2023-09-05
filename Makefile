@@ -33,4 +33,6 @@ build: clean
 	env GOOS=linux GOARCH=amd64 go build -o $(BUILD_DIR)/linux_amd64/$(EXECUTABLE)
 
 clean:
-	rm -rf $(BUILD_DIR)
+	@rm -rf $(BUILD_DIR)
+	@mkdir $(BUILD_DIR)
+	@touch $(BUILD_DIR)/.gitkeep
