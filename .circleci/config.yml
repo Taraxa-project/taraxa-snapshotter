@@ -1,0 +1,109 @@
+version: 2.1
+
+jobs:
+  build_and_push_docker_image:
+    shell: /bin/sh -leo pipefail
+    docker:
+      - image: docker:20-git
+    environment:
+      - IMAGE: taraxa-snapshotter
+      - GOOGLE_PROJECT_ID: jovial-meridian-249123
+      - BASH_ENV: /etc/profile
+    steps:
+      - checkout
+
+      - run:
+          name: Prepare environment
+          command: |
+            echo "export GCP_IMAGE=gcr.io/${GOOGLE_PROJECT_ID}/${IMAGE}" >> $BASH_ENV
+            echo "export DOCKERHUB_IMAGE=taraxa/${IMAGE}" >> $BASH_ENV
+            echo "export TIMESTAMP=$(date +%s)" >> $BASH_ENV
+            echo "export VERSION=$(git rev-parse --short HEAD)" >> $BASH_ENV
+
+      - run:
+          name: Login into GCR
+          command: |
+            echo ${GCLOUD_SERVICE_KEY} | docker login -u _json_key --password-stdin https://gcr.io
+
+      - run:
+          name: Login into Docker Hub
+          command: |
+            echo ${DOCKERHUB_PASS} | docker login -u taraxa --password-stdin
+
+      - setup_remote_docker:
+          version: 20.10.14
+          docker_layer_caching: true
+
+      - run:
+          name: Build docker image
+          command: |
+            docker build -t ${IMAGE}:${VERSION} .
+
+      - run:
+          name: Tag docker image
+          command: |
+
+            if [[ ${CIRCLE_BRANCH} == "main" ]]; then
+              docker tag ${IMAGE}:${VERSION} ${DOCKERHUB_IMAGE}:${CIRCLE_SHA1}
+              docker tag ${IMAGE}:${VERSION} ${DOCKERHUB_IMAGE}:${VERSION}
+              docker tag ${IMAGE}:${VERSION} ${DOCKERHUB_IMAGE}:${CIRCLE_BRANCH}-${VERSION}-${TIMESTAMP}
+            fi
+
+            if [[ ! -z ${CIRCLE_TAG} ]]; then
+              docker tag ${IMAGE}:${VERSION} ${DOCKERHUB_IMAGE}:${CIRCLE_TAG}
+              docker tag ${IMAGE}:${VERSION} ${DOCKERHUB_IMAGE}:latest
+            fi
+
+            if [[ ${CIRCLE_BRANCH} == "develop" ]]; then
+              docker tag ${IMAGE}:${VERSION} ${GCP_IMAGE}:${CIRCLE_BRANCH}-${CIRCLE_SHA1}
+              docker tag ${IMAGE}:${VERSION} ${GCP_IMAGE}:${CIRCLE_BRANCH}-${VERSION}
+              docker tag ${IMAGE}:${VERSION} ${GCP_IMAGE}:${CIRCLE_BRANCH}-${VERSION}-${TIMESTAMP}
+            fi
+
+      - run:
+          name: Push docker image to registry
+          command: |
+
+            if [[ ${CIRCLE_BRANCH} == "main" ]]; then
+              docker push ${DOCKERHUB_IMAGE}:${CIRCLE_SHA1}
+              docker push ${DOCKERHUB_IMAGE}:${VERSION}
+              docker push ${DOCKERHUB_IMAGE}:${CIRCLE_BRANCH}-${VERSION}-${TIMESTAMP}
+            fi
+
+            if [[ ${CIRCLE_BRANCH} == "develop" ]]; then
+              docker push ${GCP_IMAGE}:${CIRCLE_BRANCH}-${CIRCLE_SHA1}
+              docker push ${GCP_IMAGE}:${CIRCLE_BRANCH}-${VERSION}
+              docker push ${GCP_IMAGE}:${CIRCLE_BRANCH}-${VERSION}-${TIMESTAMP}
+            fi
+
+            if [[ ! -z ${CIRCLE_TAG} ]]; then
+              docker push ${DOCKERHUB_IMAGE}:${CIRCLE_TAG}
+              docker push ${DOCKERHUB_IMAGE}:latest
+            fi
+
+workflows:
+  build-and-push-docker-image:
+    jobs:
+      - build_and_push_docker_image:
+          context:
+            - GCR
+            - DOCKERHUB
+          filters:
+            branches:
+              only:
+                - main
+                - develop
+            tags:
+              ignore: /.*/
+
+  release-docker-image-tag:
+    jobs:
+      - build_and_push_docker_image:
+          context:
+            - GCR
+            - DOCKERHUB
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /^v.*/

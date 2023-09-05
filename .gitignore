@@ -1,0 +1,10 @@
+# Binaries for programs and plugins
+bin/
+build/
+!build/.gitkeep
+taraxa-snapshotter
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib

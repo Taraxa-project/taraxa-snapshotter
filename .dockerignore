@@ -1,0 +1,14 @@
+.git/
+.github/
+.circleci/
+.idea/
+.vscode/
+bin/
+build/
+Dockerfile
+.dockerignore
+.editorconfig
+.gitignore
+LICENSE
+README.md
+docker-compose.yaml
