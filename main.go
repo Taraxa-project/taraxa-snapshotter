@@ -11,26 +11,25 @@ import (
 var verbosityCount int
 
 var (
-	ipfsUrlFlag = cli.StringFlag{
+	ipfsUrlFlag = &cli.StringFlag{
 		Name:    "ipfs-url",
 		Value:   "https://ipfs.infura.io:5001",
 		Usage:   "URL of the IPFS node",
 		EnvVars: []string{"IPFS_URL"},
 	}
-	ipfsGatewayFlag = cli.StringFlag{
+	ipfsGatewayFlag = &cli.StringFlag{
 		Name:    "ipfs-gateway",
 		Value:   "https://gateway.infura.io",
 		Usage:   "URL of the IPFS gateway",
 		EnvVars: []string{"IPFS_GATEWAY"},
 	}
-	snapshotBaseDirFlag = cli.StringFlag{
+	snapshotBaseDirFlag = &cli.StringFlag{
 		Name:    "base-dir",
 		Value:   "/root/.taraxa/db",
 		Usage:   "Base directory where snapshots are located",
 		EnvVars: []string{"BASE_DIR"},
 	}
-
-	verboseFlag = cli.BoolFlag{
+	verboseFlag = &cli.BoolFlag{
 		Name:    "verbose",
 		Aliases: []string{"v"},
 		Usage:   "Enable verbose logging",
@@ -88,10 +87,10 @@ func main() {
 		Name:  "taraxa-snapshotter",
 		Usage: "Taraxa Snapshotter uploads new snapshots to IPFS and publishes them to the Taraxa network.",
 		Flags: []cli.Flag{
-			&ipfsUrlFlag,
-			&ipfsGatewayFlag,
-			&snapshotBaseDirFlag,
-			&verboseFlag,
+			ipfsUrlFlag,
+			ipfsGatewayFlag,
+			snapshotBaseDirFlag,
+			verboseFlag,
 		},
 		Commands: []*cli.Command{
 			NewListCommand(),

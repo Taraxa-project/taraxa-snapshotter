@@ -3,8 +3,10 @@ package ipfs
 import (
 	"io"
 	"net/http"
+	"net/url"
 
 	ipfsApi "github.com/ipfs/go-ipfs-api"
+	log "github.com/sirupsen/logrus"
 )
 
 // IPFSClient is a struct that connects to an IPFS node.
@@ -13,16 +15,27 @@ type IPFSClient struct {
 }
 
 // NewIPFSClient creates a new instance of the IPFSClient struct.
-func NewIPFSClient(url, projectId, projectSecret string) *IPFSClient {
+func NewIPFSClient(ipfsUrl string) *IPFSClient {
+	u, err := url.Parse(ipfsUrl)
+	if err != nil {
+		log.WithError(err).Fatal("Could not parse IPFS URL")
+	}
+
+	ipfsHost := u.Scheme + "://" + u.Host
+	ipfsUsername := u.User.Username()
+	ipfsPassword, _ := u.User.Password()
+
+	log.WithField("host", u.Redacted()).Info("Starting IPFS client")
+
 	httpClient := &http.Client{
 		Transport: authTransport{
-			RoundTripper:  http.DefaultTransport,
-			ProjectId:     projectId,
-			ProjectSecret: projectSecret,
+			RoundTripper: http.DefaultTransport,
+			Username:     ipfsUsername,
+			Password:     ipfsPassword,
 		},
 	}
 
-	shell := ipfsApi.NewShellWithClient(url, httpClient)
+	shell := ipfsApi.NewShellWithClient(ipfsHost, httpClient)
 	return &IPFSClient{client: shell}
 }
 
@@ -38,11 +51,11 @@ func (client *IPFSClient) Add(r io.Reader) (string, error) {
 
 type authTransport struct {
 	http.RoundTripper
-	ProjectId     string
-	ProjectSecret string
+	Username string
+	Password string
 }
 
 func (t authTransport) RoundTrip(r *http.Request) (*http.Response, error) {
-	r.SetBasicAuth(t.ProjectId, t.ProjectSecret)
+	r.SetBasicAuth(t.Username, t.Password)
 	return t.RoundTripper.RoundTrip(r)
 }

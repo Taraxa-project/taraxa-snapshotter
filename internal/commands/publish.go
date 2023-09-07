@@ -2,41 +2,29 @@ package commands
 
 import (
 	"fmt"
-	"net/url"
-	"strings"
+	"path"
+	"strconv"
 
+	"github.com/Taraxa-project/taraxa-snapshotter/internal/dir"
+	"github.com/Taraxa-project/taraxa-snapshotter/internal/snapshot"
 	"github.com/Taraxa-project/taraxa-snapshotter/internal/upload/ipfs"
 	log "github.com/sirupsen/logrus"
+
 	"github.com/urfave/cli/v2"
 )
 
 // Publish publishes a local snapshot to IPFS
 func Publish(ctx *cli.Context) error {
-	fmt.Println("Publish")
+	ipfsClient := ipfs.NewIPFSClient(ctx.String("ipfs-url"))
 
-	u, err := url.Parse(ctx.String("ipfs-url"))
+	i, err := strconv.Atoi(ctx.Args().Get(0))
 	if err != nil {
-		log.WithError(err).Fatal("Could not parse IPFS URL")
+		log.Fatal("Incorrect snapshot number")
 	}
 
-	ipfsHost := u.Scheme + "://" + u.Host
-	ipfsUsername := u.User.Username()
-	ipfsPassword, _ := u.User.Password()
-
-	log.WithFields(log.Fields{
-		"u":        ipfsUsername,
-		"p":        ipfsPassword,
-		"cleanUrl": ipfsHost,
-	}).Info("Starting IPFS client")
-
-	ipfsClient := ipfs.NewIPFSClient(ipfsHost, ipfsUsername, ipfsPassword)
-
-	cid, err := ipfsClient.Add(strings.NewReader("Infura IPFS - Getting started demo."))
-	if err != nil {
-		log.WithError(err).Fatal("Failed to upload file to IPFS")
-	}
-
-	log.Info("IPFS client started: ", cid)
+	snapshotDir := dir.NewDirEntry(path.Join(ctx.String("base-dir"), fmt.Sprintf("db%d", i)))
+	snapshot := snapshot.NewSnapshotFromDir(snapshotDir)
+	snapshot.Upload(ipfsClient)
 
 	return nil
 }

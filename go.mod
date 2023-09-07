@@ -3,6 +3,7 @@ module github.com/Taraxa-project/taraxa-snapshotter
 go 1.21.0
 
 require (
+	github.com/fsnotify/fsnotify v1.6.0
 	github.com/ipfs/go-ipfs-api v0.7.0
 	github.com/sirupsen/logrus v1.9.3
 	github.com/urfave/cli/v2 v2.25.7
@@ -14,7 +15,6 @@ require (
 	github.com/cpuguy83/go-md2man/v2 v2.0.2 // indirect
 	github.com/crackcomm/go-gitignore v0.0.0-20170627025303-887ab5e44cc3 // indirect
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.2.0 // indirect
-	github.com/fsnotify/fsnotify v1.6.0 // indirect
 	github.com/ipfs/boxo v0.12.0 // indirect
 	github.com/ipfs/go-cid v0.4.1 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.5 // indirect

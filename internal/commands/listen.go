@@ -21,6 +21,8 @@ func Listen(ctx *cli.Context) error {
 
 	matcher := regexp.MustCompile(`^db\d+$`)
 
+	done := make(chan bool)
+
 	go func() {
 		for {
 			select {
@@ -47,8 +49,7 @@ func Listen(ctx *cli.Context) error {
 		log.Fatal(err)
 	}
 
-	for {
-	}
+	<-done
 
 	return nil
 }
